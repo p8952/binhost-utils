@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+source /etc/init.d/functions.sh
+
+function BH_SHOW_HELP()
+{
+	echo -e "Binhost Utils, Syntax Help:\n"
+	einfo "Build a package:"
+	echo -e "	./binhost install all/<env-name> app-editors/vim\n"
+	einfo "Update all packages:"
+	echo -e "	./binhost update all/<env-name>\n"
+	einfo "Re-build all packages:"
+	echo -e "	./binhost emptytree all/<env-name>\n"
+	einfo "Cleanup packages (depclean, python-updater, eclean, ect):"
+	echo -e "	./binhost cleanup all/<env-name>\n"
+	exit
+}
+
+function BH_CHECK_ENV()
+{
+	if [[ ! -d $1 ]]; then
+		eerror "Enviroment $1 does not exist"
+		exit 1
+	fi
+	
+	for dir in bin boot dev etc home lib media mnt opt proc root run sbin sys tmp usr var; do
+		if [[ ! -d $1/$dir ]]; then
+			eerror "Enviroment $1 does not contain stage3 files"
+			exit 1
+		fi
+	done
+
+	for dir in dev proc sys usr/portage; do
+		if ! grep -qs $1/$dir /proc/mounts; then
+			eerror "Enviroment $1 does not have $dir mounted"
+			exit 1
+		fi
+	done
+}
+
+function BH_CONFIG_UPDATE()
+{
+	cp -r $BH_SCRIPT_DIR/res/make.conf $1/etc/portage/
+	cp -r $BH_SCRIPT_DIR/res/package.* $1/etc/portage/
+	cp -r $BH_SCRIPT_DIR/res/resolv.conf $1/etc/
+
+	for dir in $(find $BH_SCRIPT_DIR/res/* -type d); do
+		if [[ $(basename $1) -eq $(basename $dir) ]]; then
+			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/make.conf $1/etc/portage/                                         
+			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/package.* $1/etc/portage/
+			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/resolv.conf $1/etc/
+		fi
+	done
+
+	chroot $1 eselect news read > /dev/nul
+}
+
+function BH_EMERGE()
+{
+	if [[ $2 == "install" ]]; then
+		chroot $1 /usr/bin/emerge --ask --keep-going=y $3
+	elif [[ $2 == "update" ]]; then
+		chroot $1 /usr/bin/emerge --update --newuse --deep --keep-going=y @world
+	elif [[ $2 == "emptytree" ]]; then
+		chroot $1 /usr/bin/emerge --emptytree --keep-going=y @system
+		chroot $1 /usr/bin/emerge --emptytree --keep-going=y @world
+	elif [[ $2 == "cleanup" ]]; then
+		chroot $1 /usr/bin/emerge --depclean
+		chroot $1 /usr/bin/revdep-rebuild
+		chroot $1 /usr/sbin/python-updater
+		chroot $1 /usr/sbin/perl-cleaner --all
+		chroot $1 /usr/bin/eclean distfiles
+		chroot $1 /usr/bin/eclean packages
+		rm $1/var/packages/Packages
+	fi
+}
+
+
+function BH_CLEANUP()
+{
+	chroot $1 /usr/sbin/emaint -f binhost
+}
+
+BH_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BH_CHROOT_DIR="$BH_SCRIPT_DIR/chroots/"
+BH_CHROOT_ENV=("gentoo-amd64")
+BH_SELECTED_OPTS=0
+BH_SELECTED_ARCH=0
+BH_SELECTED_PKGS=0
+
+if [[ $1 == "install" ]]; then
+	if [[ $# -eq 3 ]]; then
+		BH_SELECTED_OPTS=$1
+		BH_SELECTED_ARCH=$2
+		BH_SELECTED_PKGS=$3
+	else
+		BH_SHOW_HELP
+	fi
+elif [[ $1 == "update" ]]; then
+	if [[ $# -eq 2 ]]; then
+		BH_SELECTED_OPTS=$1
+		BH_SELECTED_ARCH=$2
+		BH_SELECTED_PKGS=0
+	else
+		BH_SHOW_HELP
+	fi
+elif [[ $1 == "emptytree" ]]; then
+	if [[ $# -eq 2 ]]; then
+		BH_SELECTED_OPTS=$1
+		BH_SELECTED_ARCH=$2
+		BH_SELECTED_PKGS=0
+	else
+		BH_SHOW_HELP
+	fi
+elif [[ $1 == "cleanup" ]]; then
+	if [[ $# -eq 2 ]]; then
+		BH_SELECTED_OPTS=$1
+		BH_SELECTED_ARCH=$2
+		BH_SELECTED_PKGS=0
+	else
+		BH_SHOW_HELP
+	fi
+else
+	BH_SHOW_HELP
+fi
+
+if [[ ! $BH_SELECTED_ARCH == "all" ]]; then
+	unset -v BH_CHROOT_ENV
+	BH_CHROOT_ENV=$BH_SELECTED_ARCH
+fi
+
+for BH_ENV in ${BH_CHROOT_ENV[@]}; do
+	BH_CHECK_ENV $BH_CHROOT_DIR$BH_ENV
+	BH_CONFIG_UPDATE $BH_CHROOT_DIR$BH_ENV
+	BH_EMERGE $BH_CHROOT_DIR$BH_ENV $BH_SELECTED_OPTS $BH_SELECTED_PKGS
+	BH_CLEANUP $BH_CHROOT_DIR$BH_ENV
+done
