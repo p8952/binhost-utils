@@ -1,0 +1,2 @@
+chroots/gentoo-amd64/*
+!chroots/gentoo-amd64/README.md
