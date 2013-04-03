@@ -30,10 +30,15 @@ function BH_CHECK_ENV()
 		fi
 	done
 
+	if [[ ! -d $1/usr/portage ]]; then
+		mkdir -p $1/usr/portage
+	fi
+
 	for dir in dev proc sys usr/portage; do
 		if ! grep -qs $1/$dir /proc/mounts; then
-			eerror "Enviroment $1 does not have $dir mounted"
-			exit 1
+			ewarn "Enviroment $1 does not have $dir mounted... Mounting."
+			mount -o rbind /$dir /$1/$dir
+			mount -o remount,rbind,ro /$dir /$1/$dir
 		fi
 	done
 }
