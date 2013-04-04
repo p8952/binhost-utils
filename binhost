@@ -4,7 +4,6 @@ source /etc/init.d/functions.sh
 
 function BH_SHOW_HELP()
 {
-	echo -e "Binhost Utils, Syntax Help:\n"
 	einfo "Build a package:"
 	echo -e "	./binhost install all/<env-name> app-editors/vim\n"
 	einfo "Update all packages:"
@@ -13,6 +12,8 @@ function BH_SHOW_HELP()
 	echo -e "	./binhost emptytree all/<env-name>\n"
 	einfo "Cleanup packages (depclean, python-updater, eclean, ect):"
 	echo -e "	./binhost cleanup all/<env-name>\n"
+	einfo "Full documentation:"
+	echo -e "	https://github.com/p8952/binhost-utils"
 	exit
 }
 
@@ -36,7 +37,7 @@ function BH_CHECK_ENV()
 
 	for dir in dev proc sys usr/portage; do
 		if ! grep -qs $1/$dir /proc/mounts; then
-			ewarn "Enviroment $1 does not have $dir mounted... Mounting."
+			einfo "Enviroment $(basename $1) does not have $dir mounted... mounting"
 			mount -o rbind /$dir /$1/$dir
 			mount -o remount,rbind,ro /$dir /$1/$dir
 		fi
@@ -56,8 +57,6 @@ function BH_CONFIG_UPDATE()
 			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/resolv.conf $1/etc/
 		fi
 	done
-
-	chroot $1 eselect news read > /dev/nul
 }
 
 function BH_EMERGE()
@@ -74,16 +73,21 @@ function BH_EMERGE()
 		chroot $1 /usr/bin/revdep-rebuild
 		chroot $1 /usr/sbin/python-updater
 		chroot $1 /usr/sbin/perl-cleaner --all
-		chroot $1 /usr/bin/eclean distfiles
 		chroot $1 /usr/bin/eclean packages
-		rm $1/var/packages/Packages
+		chroot $1 /usr/bin/eclean distfiles
 	fi
 }
-
 
 function BH_CLEANUP()
 {
 	chroot $1 /usr/sbin/emaint -f binhost
+	
+	for dir in dev proc sys usr/portage; do
+		if grep -qs $1/$dir /proc/mounts; then
+			einfo "Unmounting $dir from $(basename $1)"
+			umount -l /$1/$dir
+		fi
+	done
 }
 
 BH_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
