@@ -62,12 +62,11 @@ function BH_CONFIG_UPDATE()
 function BH_EMERGE()
 {
 	if [[ $2 == "install" ]]; then
-		chroot $1 /usr/bin/emerge --ask --keep-going=y $3
+		chroot $1 /usr/bin/emerge $3
 	elif [[ $2 == "update" ]]; then
-		chroot $1 /usr/bin/emerge --update --newuse --deep --keep-going=y @world
+		chroot $1 /usr/bin/emerge --update --newuse --deep @world
 	elif [[ $2 == "emptytree" ]]; then
-		chroot $1 /usr/bin/emerge --emptytree --keep-going=y @system
-		chroot $1 /usr/bin/emerge --emptytree --keep-going=y @world
+		chroot $1 /usr/bin/emerge --emptytree @world
 	elif [[ $2 == "cleanup" ]]; then
 		chroot $1 /usr/bin/emerge --depclean
 		chroot $1 /usr/bin/revdep-rebuild
