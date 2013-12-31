@@ -1,4 +1,4 @@
 Extract Gentoo stage3 files here:
 
-	wget ftp://mirror.bytemark.co.uk/gentoo/releases/amd64/current-stage3/default/20130321/stage3-amd64-20130321.tar.bz2
+	curl -s http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64.txt | tail -1 | wget http://distfiles.gentoo.org/releases/amd64/autobuilds/20131226/stage3-amd64-20131226.tar.bz2
 	tar xvjpf stage3-*.tar.bz2
