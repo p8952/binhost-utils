@@ -23,7 +23,7 @@ function BH_CHECK_ENV()
 		eerror "Enviroment $1 does not exist"
 		exit 1
 	fi
-	
+
 	for dir in bin boot dev etc home lib media mnt opt proc root run sbin sys tmp usr var; do
 		if [[ ! -d $1/$dir ]]; then
 			eerror "Enviroment $1 does not contain stage3 files"
@@ -46,15 +46,15 @@ function BH_CHECK_ENV()
 
 function BH_CONFIG_UPDATE()
 {
-	cp -r $BH_SCRIPT_DIR/res/make.conf $1/etc/portage/
-	cp -r $BH_SCRIPT_DIR/res/package.* $1/etc/portage/
-	cp -r $BH_SCRIPT_DIR/res/resolv.conf $1/etc/
+	cp -r $BH_SCRIPT_DIR/conf/make.conf $1/etc/portage/
+	cp -r $BH_SCRIPT_DIR/conf/package.* $1/etc/portage/
+	cp -r $BH_SCRIPT_DIR/conf/resolv.conf $1/etc/
 
-	for dir in $(find $BH_SCRIPT_DIR/res/* -type d); do
+	for dir in $(find $BH_SCRIPT_DIR/conf/* -type d); do
 		if [[ $(basename $1) -eq $(basename $dir) ]]; then
-			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/make.conf $1/etc/portage/                                         
-			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/package.* $1/etc/portage/
-			cp -r $BH_SCRIPT_DIR/res/$(basename $dir)/resolv.conf $1/etc/
+			cp -r $BH_SCRIPT_DIR/conf/$(basename $dir)/make.conf $1/etc/portage/
+			cp -r $BH_SCRIPT_DIR/conf/$(basename $dir)/package.* $1/etc/portage/
+			cp -r $BH_SCRIPT_DIR/conf/$(basename $dir)/resolv.conf $1/etc/
 		fi
 	done
 }
@@ -80,7 +80,7 @@ function BH_EMERGE()
 function BH_CLEANUP()
 {
 	chroot $1 /usr/sbin/emaint -f binhost
-	
+
 	for dir in dev proc sys usr/portage; do
 		if grep -qs $1/$dir /proc/mounts; then
 			einfo "Unmounting $dir from $(basename $1)"
