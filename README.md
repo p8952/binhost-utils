@@ -22,7 +22,7 @@ This also applies to all 'make.conf' files within environment subdirectories.
 Quickstart
 ----------
 	cd chroots/gentoo-amd64
-	curl -s http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64.txt | tail -1 | wget http://distfiles.gentoo.org/releases/amd64/autobuilds/20131226/stage3-amd64-20131226.tar.bz2
+	wget http://distfiles.gentoo.org/releases/amd64/autobuilds/$(curl -s http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64.txt | tail -n 1)
 	tar xvjpf stage3-*.tar.bz2
 	cd ../..
 	./binhost emptytree gentoo-amd64
